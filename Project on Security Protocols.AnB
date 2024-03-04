@@ -1,18 +1,18 @@
 Protocol: SecureTicketPlatform
 
 Types: 
-    Agent C,T,s,p,i;   # Customers, Ticket Devices, seats servers, payment servers, identity servers
+    Agent C,T,s,p,id;   # Customers, Ticket Devices, seats servers, payment servers, identity servers
     Number ;
     Symmetric_key ;
     Function sk;
 
 
 Knowledge:
-    C: C,T,s,p,i
+    C: C,T,s,p,id
     T: C,T,s
-    s: C,T,s,p,i,pk(s),inv(pk(s))
+    s: C,T,s,p,id,pk(s),inv(pk(s))
     p: C,s,pk(p),inv(pk(p))
-    i: C,s,pk(i),inv(pk(i))
+    id: C,s,pk(id),inv(pk(id))
 
 Actions:
 
