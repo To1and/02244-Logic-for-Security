@@ -1,22 +1,62 @@
 Protocol: SecureTicketPlatform
 
-Types: 
-    Agent C,T,s,p,id;   # Customers, Ticket Devices, seats servers, payment servers, identity servers
-    Number ;
-    Symmetric_key ;
-    Function sk;
+Types:
+    Agent C, T, S, P, ID;   // Customers, Ticket Devices, Venue Servers, Payment Servers, Identity Servers
+    Number N;
+    SymmetricKey K;
+    Message Ticket, Request, Confirmation;
+    PublicKey PK;
+    Signature SIG;
+    Nonce NC;
 
+Functions:
+    sk: Agent -> SymmetricKey
+    pk: Agent -> PublicKey
+    encrypt: (Message, PublicKey) -> Message
+    sign: (Message, Agent) -> Signature
+    verify: (Signature, PublicKey) -> Bool
 
 Knowledge:
-    C: C,T,s,p,id
-    T: C,T,s
-    s: C,T,s,p,id,pk(s),inv(pk(s))
-    p: C,s,pk(p),inv(pk(p))
-    id: C,s,pk(id),inv(pk(id))
+    C: C, pk(T), pk(S), pk(P), pk(ID)
+    T: T, pk(C), pk(S)
+    S: S, pk(C), pk(T), pk(P), pk(ID), sk(S), pk(S)
+    P: P, pk(S), sk(P), pk(P)
+    ID: ID, pk(C), pk(S), sk(ID), pk(ID)
 
 Actions:
-
+    // Customer requests ticket from Venue Server
+    C -> S: Request, encrypt(NC, pk(S)), sign(Request + NC, C)
+    
+    // Venue Server requests payment authorization from Payment Server
+    S -> P: encrypt(Request + NC, pk(P)), sign(Request + NC, S)
+    
+    // Payment Server confirms payment
+    P -> S: encrypt(Confirmation + NC, pk(S)), sign(Confirmation + NC, P)
+    
+    // Venue Server requests identity verification from Identity Server
+    S -> ID: encrypt(Request + NC, pk(ID)), sign(Request + NC, S)
+    
+    // Identity Server confirms identity
+    ID -> S: encrypt(Confirmation + NC, pk(S)), sign(Confirmation + NC, ID)
+    
+    // Venue Server issues ticket to Customer
+    S -> C: encrypt(Ticket + NC, pk(C)), sign(Ticket + NC, S)
+    
+    // Customer presents ticket at Ticket Device
+    C -> T: Ticket, sign(Ticket, C)
+    
+    // Ticket Device verifies ticket with Venue Server
+    T -> S: verify(sign(Ticket, C), pk(C))
+    S -> T: Confirmation
 
 Goals:
+    Secrecy of K
+    Authentication of C, T, S, P, ID
+    C secrecy on Ticket
+    C authentication on Ticket
+    S authentication on Request, Ticket
+    P authentication on Payment
+    ID authentication on Identity
+    T weak agreement on Ticket with S
 
 
