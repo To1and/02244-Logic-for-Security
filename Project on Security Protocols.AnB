@@ -3,7 +3,7 @@ Protocol: SecureTicketPlatform
 Types:
     Agent C,T,S,P,ID;   # Customers, Ticket Devices, Venue Servers, Payment Servers, Identity Servers
     Number N;
-    SymmetricKey K;
+    Symmetric_key K;
     Message Ticket, Request, Confirmation;
     PublicKey PK;
     Signature SIG;
