@@ -1,7 +1,7 @@
 Protocol: SecureTicketPlatform
 
 Types:
-    Agent C, T, S, P, ID;   // Customers, Ticket Devices, Venue Servers, Payment Servers, Identity Servers
+    Agent C,T,S,P,ID;   # Customers, Ticket Devices, Venue Servers, Payment Servers, Identity Servers
     Number N;
     SymmetricKey K;
     Message Ticket, Request, Confirmation;
@@ -24,28 +24,28 @@ Knowledge:
     ID: ID, pk(C), pk(S), sk(ID), pk(ID)
 
 Actions:
-    // Customer requests ticket from Venue Server
+    # Customer requests ticket from Venue Server
     C -> S: Request, encrypt(NC, pk(S)), sign(Request + NC, C)
     
-    // Venue Server requests payment authorization from Payment Server
+    # Venue Server requests payment authorization from Payment Server
     S -> P: encrypt(Request + NC, pk(P)), sign(Request + NC, S)
     
-    // Payment Server confirms payment
+    # Payment Server confirms payment
     P -> S: encrypt(Confirmation + NC, pk(S)), sign(Confirmation + NC, P)
     
-    // Venue Server requests identity verification from Identity Server
+    # Venue Server requests identity verification from Identity Server
     S -> ID: encrypt(Request + NC, pk(ID)), sign(Request + NC, S)
     
-    // Identity Server confirms identity
+    # Identity Server confirms identity
     ID -> S: encrypt(Confirmation + NC, pk(S)), sign(Confirmation + NC, ID)
     
-    // Venue Server issues ticket to Customer
+    # Venue Server issues ticket to Customer
     S -> C: encrypt(Ticket + NC, pk(C)), sign(Ticket + NC, S)
     
-    // Customer presents ticket at Ticket Device
+    # Customer presents ticket at Ticket Device
     C -> T: Ticket, sign(Ticket, C)
     
-    // Ticket Device verifies ticket with Venue Server
+    # Ticket Device verifies ticket with Venue Server
     T -> S: verify(sign(Ticket, C), pk(C))
     S -> T: Confirmation
 
