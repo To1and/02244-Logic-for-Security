@@ -1,27 +1,17 @@
 Protocol: SecureTicketPlatform
 
 Types:
-    Agent C,T,S,P,ID;   # Customers, Ticket Devices, Venue Servers, Payment Servers, Identity Servers
+    Agent C,T,s,p,id;   # Customers, Ticket Devices, Venue Servers, Payment Servers, Identity Servers
     Number N;
     Symmetric_key K;
-    Message Ticket, Request, Confirmation;
-    PublicKey PK;
-    Signature SIG;
-    Nonce NC;
-
-Functions:
-    sk: Agent -> SymmetricKey
-    pk: Agent -> PublicKey
-    encrypt: (Message, PublicKey) -> Message
-    sign: (Message, Agent) -> Signature
-    verify: (Signature, PublicKey) -> Bool
+    Function credit,sk;
 
 Knowledge:
-    C: C, pk(T), pk(S), pk(P), pk(ID)
-    T: T, pk(C), pk(S)
-    S: S, pk(C), pk(T), pk(P), pk(ID), sk(S), pk(S)
-    P: P, pk(S), sk(P), pk(P)
-    ID: ID, pk(C), pk(S), sk(ID), pk(ID)
+    C: C,T,S,P,ID,pk(T),pk(s),pk(p),pk(id),
+    T: T,C,s,pk(T),pk(s),pk(p),pk(id),inv(pk(T))
+    s: s,C,T,P,ID,pk(T),pk(s),pk(p),pk(id),inv(pk(C))
+    p: P,C, V,pk(T),pk(s),pk(p),pk(id),inv(pk(p))
+    id: id,C,V, pk(T),pk(s),pk(p),pk(id),inv(pk(id))
 
 Actions:
     # Customer requests ticket from Venue Server
@@ -50,13 +40,6 @@ Actions:
     S -> T: Confirmation
 
 Goals:
-    Secrecy of K
-    Authentication of C, T, S, P, ID
-    C secrecy on Ticket
-    C authentication on Ticket
-    S authentication on Request, Ticket
-    P authentication on Payment
-    ID authentication on Identity
-    T weak agreement on Ticket with S
+
 
 
