@@ -37,6 +37,7 @@ Actions:
     
     # Ticket Device verifies ticket with Venue Server
     T -> S: verify(sign(Ticket, C), pk(C))
+    
     S -> T: Confirmation
 
 Goals:
