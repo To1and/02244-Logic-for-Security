@@ -1,46 +1,74 @@
 Protocol: SecureTicketPlatform
 
 Types:
-    Agent C,T,s,p,id;   # Customers, Ticket Devices, Venue Servers, Payment Servers, Identity Servers
-    Number N;
-    Symmetric_key K;
-    Function credit,sk;
+    Agent C,T,SP,mpay,mitid;   # Customer, Ticket Device, Service(Ticket & Venue) Provider, mobilepay, mitid
+    Number ID1,ID2,ID3,Requests,PaymentData,PaymentResult,Confirmation;
+    Function h,sk
 
 Knowledge:
-    C: C,T,S,P,ID,pk(T),pk(s),pk(p),pk(id),
-    T: T,C,s,pk(T),pk(s),pk(p),pk(id),inv(pk(T))
-    s: s,C,T,P,ID,pk(T),pk(s),pk(p),pk(id),inv(pk(C))
-    p: P,C, V,pk(T),pk(s),pk(p),pk(id),inv(pk(p))
-    id: id,C,V, pk(T),pk(s),pk(p),pk(id),inv(pk(id))
+    C: C,T,SP,mpay,mitid,pk(mitid)
+    T: T,SP
+    SP: T,SP,mpay,mitid,pk(mitid)
+    mpay: SP,mpay,mitid,pk(mitid)
+    mitid: C,mitid,pk(mitid),inv(pk(mitid))
 
 Actions:
-    # Customer requests ticket from Venue Server
-    C -> S: Request, encrypt(NC, pk(S)), sign(Request + NC, C)
-    
-    # Venue Server requests payment authorization from Payment Server
-    S -> P: encrypt(Request + NC, pk(P)), sign(Request + NC, S)
-    
-    # Payment Server confirms payment
-    P -> S: encrypt(Confirmation + NC, pk(S)), sign(Confirmation + NC, P)
-    
-    # Venue Server requests identity verification from Identity Server
-    S -> ID: encrypt(Request + NC, pk(ID)), sign(Request + NC, S)
-    
-    # Identity Server confirms identity
-    ID -> S: encrypt(Confirmation + NC, pk(S)), sign(Confirmation + NC, ID)
-    
-    # Venue Server issues ticket to Customer
-    S -> C: encrypt(Ticket + NC, pk(C)), sign(Ticket + NC, S)
-    
-    # Customer presents ticket at Ticket Device
-    C -> T: Ticket, sign(Ticket, C)
-    
-    # Ticket Device verifies ticket with Venue Server
-    T -> S: verify(sign(Ticket, C), pk(C))
-    
-    S -> T: Confirmation
+
+    # Customer sends a secure request to Service Provider for ticketing services
+    [C] *->* SP : C,SP,Requests
+
+    # SP securely responds back to C, including a referral to mitid for identity verification.
+    SP *->* [C] : C,mitid,SP,ID1,Requests
+
+    # C securely forwards the request to mitid for identity verification
+    C  *->* mitid : C,mitid,SP,ID1,Requests
+
+    # mitid sends back a secure confirmation to C, including a digitally signed message
+    mitid *->* C : ID1,mitid,SP,{ID1,C,mitid,SP}inv(pk(mitid)),Requests
+
+    # C securely forwards mitid's confirmation to SP
+    [C] *->* SP : ID1,mitid,SP,{ID1,C,mitid,SP}inv(pk(mitid)),Requests
+
+    # SP sends secure payment data to C
+    SP *->* [C] : Requests,PaymentData,ID1
+
+    # C securely sends payment data along with SP and mpay information to mitid for another layer of identity verification.
+    C  *->* mitid : C,SP,mitid,mpay,ID1,ID2,PaymentData
+
+    # mitid securely responds to C with digitally signed payment information
+    mitid *->* C   : ID1,ID2,mitid,mpay,SP,{ID1,ID2,C,mitid,mpay,SP}inv(pk(mitid)),PaymentData
+
+    # C securely forwards the payment request to mpay
+    [C] *->* mpay  : ID1,ID2,mitid,mpay,SP,{ID1,ID2,C,mitid,mpay,SP}inv(pk(mitid)),PaymentData
+
+    # mpay securely informs SP of the payment outcome
+    mpay *->* SP : PaymentData,PaymentResult,ID1,ID2
+
+    # SP sends the ticket to C securely
+    SP *->* [C] : Ticket,ID1,ID2
+
+    # C securely sends the ticket to the Ticket Device for validation
+    [C] *->* T : C,Ticket,ID1,ID2,ID3
+
+    # T securely informs SP that the ticket has been validated.
+    T *->* SP : C,Ticket,ID1,ID2,ID3
+
+    # SP sends a secure confirmation back to Ticket Device and let the Customer pass
+    SP *->* T : Confirmation,ID1,ID2,ID3
+
 
 Goals:
 
+    SP authenticates C on Requests
 
+    C authenticates SP on PaymentData
 
+    mpay authenticates C on PaymentData
+
+    C authenticates mpay on PaymentResult
+
+    T authenticates C on Confirmation
+
+    Data secret between SP,C
+
+    Data secret between mpay,C
