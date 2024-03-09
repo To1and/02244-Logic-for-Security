@@ -1,0 +1,86 @@
+Protocol: SecureTicketPlatform
+
+Types: 
+    Agent C,T,D,p,m;  #Customer C, Ticket Platform T, Entrance Device D, Payment Provider p, MitID m
+    Number NC,NT,Ticket,PaymentInfo,TicketRequest,Ticket,MitIDToken,VerificationResult;
+    Symmetric_key KCT,KCm;
+    Function credit,sk;
+
+Knowledge:
+    C: C,T,D,p,m,pk(T),pk(D),pk(p),sk(C,p),credit;
+    T: C,T,D,p,m,pk(T),pk(D),inv(pk(D)),inv(pk(T)),pk(p),pk(m);
+    D: C,T,D,pk(D),inv(pk(D)),pk(T);
+    p: C,T,p,pk(p),inv(pk(p)),pk(T),inv(pk(T)),sk(C,p),credit;
+    m: C,T,m,pk(m),inv(pk(m)),pk(T),inv(pk(T))
+
+Actions:
+    ################## ID Authentication ##################
+
+    # 1. The customer initiates authentication by sending a message to MitID, encrypted with MitID's public key. This message includes the Customer's ID, Ticket Platform's ID, MitID's ID, a nonce (a number used once) to prevent replay attacks, a token representing some form of authentication or request data (MitIDToken), and a symmetric key (KCm) intended for secure communication between the Customer and MitID. Encrypting with MitID's public key ensures that only MitID can decrypt and process this information, safeguarding the integrity and confidentiality of the initial authentication request.
+    C −> m: {C,T,m,NC,MitIDToken,KCm}pk(m)
+
+    # 2. MitID forwards the Customer's ID and the nonce received from the customer to the Ticket Platform, signing the message with its private key. This step serves as a proof of MitID's verification of the customer's identity to the Ticket Platform, ensuring that the request originates from a legitimate source and has not been tampered with.
+    m −> T: {C,NC}inv(pk(m))
+
+    # 3. The Ticket Platform responds to MitID with a message containing its own nonce (for session uniqueness), the nonce received from the customer (linking this response to the original request), its ID, and a symmetric key (KCT) for secure communication with the Customer. This message is signed with the Ticket Platform's private key, ensuring its authenticity to MitID.
+    T −> m: {NT,NC,T,KCT}inv(pk(T))
+
+    # 4. MitID sends the symmetric key (KCT) back to the Customer, encrypted with the symmetric key (KCm) shared between MitID and the Customer. This ensures that only the Customer can decrypt the message, securely delivering the symmetric key for subsequent encrypted communications with the Ticket Platform.
+    m −> C: {|KCT|}KCm
+
+    ################## Send order ##################
+
+    # 5. The customer places an order by sending ticket information and the MitIDToken encrypted with the symmetric key (KCT) shared with the Ticket Platform. This ensures confidentiality of the order and verification token during transit.
+    C −> T: {|TicketRequest,MitIDToken|}KCT
+
+    # 6. The Ticket Platform acknowledges the order by sending back payment information along with the customer's ID and the ticket information, encrypted with KCT. This step confirms the order details and informs the Customer about the payment process securely.
+    T− > C: {|C,PaymentInfo,TicketRequest|}KCT
+    
+    ################## Confirm order ##################
+
+    # 7. The customer confirms the order details, including payment information, ticket information, their ID, and the MitIDToken, all encrypted with KCT. This step finalizes the order details securely between the Customer and the Ticket Platform.
+    C −> T: {|PaymentInfo,TicketRequest,C,MitIDToken|}KCT
+
+
+    ################## Payment Authentication  ##################
+
+    # 8. The Ticket Platform initiates the payment process by sending its ID and the MitIDToken to the Payment Provider, signed with its private key. This provides authentication of the Ticket Platform and conveys the transaction's context to the Payment Provider.
+    T −> p: {T,MitIDToken}inv(pk(T))
+
+    # 9. The Payment Provider acknowledges the transaction initiation by sending back the MitIDToken and its ID, signed with its private key. This confirms the Payment Provider's readiness to process the payment and authenticates the response to the Ticket Platform.
+    p −> T: {MitIDToken,p}inv(pk(p))
+
+    # 10. The Ticket Platform sends the Customer a message containing the MitIDToken and Payment Provider's ID, signed by the Payment Provider, along with payment information and the Customer's ID encrypted with KCT. This complex message combines authentication elements and confidential transaction details, ensuring secure and authenticated communication.
+    T −> C: {MitIDToken,p}inv(pk(p)),{|{PaymentInfo,C}inv(pk(T))|}KCT
+
+
+    ################### Transaction ##################
+
+    # 11. The Customer sends the Payment Provider the MitIDToken and a message containing the payment information and Customer's ID, signed by the Ticket Platform, along with another message containing the Customer's credit information, the symmetric key KCm, and payment details, all encrypted with a shared secret key (sk(C,p)). This step securely transmits all necessary payment and authentication details to the Payment Provider, ensuring confidentiality and integrity.
+    C −> p: {MitIDToken,{PaymentInfo,C}inv(pk(T))}pk(p),{|credit(C),KCm,PaymentInfo|}sk(C,p)
+
+    # 12. The Payment Provider sends a confirmation message to the Ticket Platform, including the payment information and MitIDToken, encrypted with the Ticket Platform's public key. This confirms the completion of the payment transaction, securely conveying the outcome back to the Ticket Platform.
+    p −> T: {PaymentInfo,MitIDToken}pk(T)
+
+    # 13. The Ticket Platform signs the Customer's ID and the Ticket using its private key (inv(pk(T)), ensuring authenticity and integrity. It then encrypts this signed data with its own public key (pk(T)), aiming to create a package that remains secure and unaltered through the checking environment, presuming that only the intended verifier (with access to inv(pk(T)), the Ticket Platform's private key) can ultimately decrypt and validate it directly before use. Separately, the TicketInfo, which is also signed for authenticity and integrity, is encrypted with a symmetric key KCT shared between the Ticket Platform and Customer, ensuring confidentiality and integrity for the Customer's access.
+    T -> C: {{C,Ticket}inv(pk(T))}pk(T),{|{TicketInfo}inv(pk(T))|}KCT
+
+    ################### Ticket Verification ##################
+
+    # 14. The encrypted and signed ticket data ({{C,Ticket}inv(pk(T))}pk(T)), which is intended to be securely passed through the system without being decrypted by intermediaries, ensuring that only the final verifying entity can inspect it. The ticket information encrypted with D's public key ensuring that only D can decrypt it. This part of the message allows D to access event details necessary for entry control, independently of the ticket's cryptographic validation.
+    C -> D: {{C,Ticket}inv(pk(T))}pk(T),{{TicketInfo}inv(pk(T))}pk(D)
+
+    # 15. The Entrance Device sends the received data to the Ticket Platform for verification, maintaining the encryption and signature. The use of pk(T) for the second part of the message again aims to ensure that the content remains secure until it reaches the Ticket Platform, which uses its private key for decryption and verification.
+    D -> T: {{C,Ticket}inv(pk(T))}pk(T),{{TicketInfo}inv(pk(T))}pk(T)
+
+    # 16. The Ticket Platform sends the verification result to the Entrance Device, encrypted with D's public key (pk(D)). This ensures that the verification result is confidential, accessible only to the Entrance Device.
+    T -> D: {VerificationResult}pk(D)
+
+
+Goals:
+p authenticates C on sk(C,p)
+KCp,credit(C) secret between C,p
+TicketRequest secret between C,T
+TicketInfo secret between C,T,D
+VerificationResult secret between T,D
+PaymentInfo,KCT secret between C,T,p 
