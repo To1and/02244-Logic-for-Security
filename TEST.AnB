@@ -1,0 +1,30 @@
+Protocol: KeyEx
+
+Types:
+  Agent C,T,s;
+  Number NC,NT;
+  Symmetric_key KCT;
+  Function sk,pre;
+
+Knowledge:
+  C: C,T,s,sk(C,s),pre;
+  T: C,T,s,sk(T,s),pre;
+  s: C,T,s,sk(C,s),sk(T,s),pre
+  where C!=T
+
+Actions:
+
+# T creates NT
+T->C: C,T,NT
+C->s: C,T,NC,NT
+# s creates key KCT
+s->C: {| KCT,C,T,NC |}sk(C,s), {| KCT,C,T,NT |}sk(T,s)
+C->T: {| KCT,C,T,NT |}sk(T,s)
+ 
+Goals: 
+
+C authenticates s on KCT,T
+T authenticates s on KCT,C
+
+KCT secret between C,T,s
+
