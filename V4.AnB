@@ -2,16 +2,15 @@ Protocol: SecureTicketPlatform
 
 Types: Agent C,T,D,p,m;  #Customer C, Ticket Platform T, Entrance Device D, Payment Provider p, MitID m
     Number NC,NT,Ticket,PaymentInfo,TicketRequest,Ticket,TicketInfo,MitIDToken,VerificationResult;
-    Symmetric_key KCT,KCm,KCp;
+    Symmetric_key KCT,KCm;
     Function credit,sk;
 
-Knowledge: C: C,T,D,p,m,pk(T),pk(D),pk(p),sk(C,p),credit;  
-           T: C,T,D,p,m,pk(T),pk(D),inv(pk(D)),inv(pk(T)),pk(p),pk(m);  
+Knowledge: C: C,T,D,p,m,pk(T),pk(D),pk(p),pk(m),sk(C,p),credit;
+           T: C,T,D,p,m,pk(T),pk(D),inv(pk(D)),inv(pk(T)),pk(p),pk(m);
            D: C,T,D,pk(D),inv(pk(D)),pk(T);
            p: C,T,p,pk(p),inv(pk(p)),pk(T),inv(pk(T)),sk(C,p),credit;
-           m: C,T,m,pk(m),inv(pk(m)),pk(T),inv(pk(T));
+           m: C,T,m,pk(m),inv(pk(m)),pk(T),inv(pk(T))
 where C!=T
-
 
 Actions:
     C -> m: {C,T,m,NC,MitIDToken,KCm}pk(m)
@@ -24,20 +23,19 @@ Actions:
     T -> p: {T,MitIDToken}inv(pk(T))
     p -> T: {MitIDToken,p}inv(pk(p))
     T -> C: {MitIDToken,p}inv(pk(p)),{|{PaymentInfo,C}inv(pk(T))|}KCT
-    C -> p: {MitIDToken,PaymentInfo}pk(p),{|credit(C),KCm|}sk(C,p)  
+    C -> p: {MitIDToken,{PaymentInfo,C}inv(pk(T))}pk(p),{|credit(C),KCm,PaymentInfo|}sk(C,p)
     p -> T: {PaymentInfo,MitIDToken}pk(T)
-    T -> p: {|KCT,PaymentInfo|}pk(p)  
-    T -> C: {{C,Ticket}inv(pk(T))}pk(T),{|{TicketInfo}inv(pk(T))|}KCT
-    C -> D: {{C,Ticket}inv(pk(T))}pk(T),{{TicketInfo}inv(pk(T))}pk(D)
-    D -> T: {{C,Ticket}inv(pk(T))}pk(T),{{TicketInfo}inv(pk(T))}pk(T)
+    T -> C: {|{TicketInfo}inv(pk(T)),{{C,Ticket}inv(pk(T))}pk(T)|}KCT
+    C -> D: {{TicketInfo}inv(pk(T)),{{C,Ticket}inv(pk(T))}pk(T)}pk(D)
+    D -> T: {{TicketInfo}inv(pk(T)),{{C,Ticket}inv(pk(T))}pk(T)}pk(T)
     T -> D: {VerificationResult}pk(D)
-
 
 
 Goals:
 p authenticates C on sk(C,p)
-KCp,credit(C) secret between C,p
+credit(C) secret between C,p
 TicketRequest secret between C,T
 TicketInfo secret between C,T,D
 VerificationResult secret between T,D
-PaymentInfo,KCT secret between C,T,p 
+KCT secret between C,T
+PaymentInfo secret between C,T,p
