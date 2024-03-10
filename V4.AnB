@@ -1,41 +1,41 @@
 Protocol: SecureTicketPlatform
 
-Types: Agent C,T,D,p,m;  #Customer C, Ticket Platform T, Entrance Device D, Payment Provider p, MitID m
-    Number NC,NT,Ticket,PaymentInfo,TicketRequest,Ticket,TicketInfo,MitIDToken,VerificationResult;
-    Symmetric_key KCT,KCm;
+Types: Agent C,t,D,p,m;  #Customer C, Ticket Platform t, Entrance Device D, Payment Provider p, MitID m
+    Number NC,Nt,Ticket,PaymentInfo,TicketRequest,Ticket,TicketInfo,MitIDToken,VerificationResult;
+    Symmetric_key KCt,KCm;
     Function credit,sk;
 
-Knowledge: C: C,T,D,p,m,pk(T),pk(D),pk(p),pk(m),sk(C,p),credit;
-           T: C,T,D,p,m,pk(T),pk(D),inv(pk(D)),inv(pk(T)),pk(p),pk(m);
-           D: C,T,D,pk(D),inv(pk(D)),pk(T);
-           p: C,T,p,pk(p),inv(pk(p)),pk(T),inv(pk(T)),sk(C,p),credit;
-           m: C,T,m,pk(m),inv(pk(m)),pk(T),inv(pk(T))
-where C!=T
+Knowledge: C: C,t,D,p,m,pk(t),pk(D),pk(p),pk(m),sk(C,p),credit;
+           t: C,t,D,p,m,pk(t),pk(D),inv(pk(D)),inv(pk(t)),pk(p),pk(m);
+           D: C,t,D,pk(D),inv(pk(D)),pk(t);
+           p: C,t,p,pk(p),inv(pk(p)),pk(t),inv(pk(t)),sk(C,p),credit;
+           m: C,t,m,pk(m),inv(pk(m)),pk(t),inv(pk(t))
+where C!=t
 
 Actions:
-    C -> m: {C,T,m,NC,MitIDToken,KCm}pk(m)
-    m -> T: {C,NC}inv(pk(m))
-    T -> m: {NT,NC,T,KCT}inv(pk(T))
-    m -> C: {|KCT|}KCm
-    C -> T: {|TicketRequest,MitIDToken|}KCT
-    T -> C: {|C,PaymentInfo,TicketRequest|}KCT
-    C -> T: {|PaymentInfo,TicketRequest,C,MitIDToken|}KCT
-    T -> p: {T,MitIDToken}inv(pk(T))
-    p -> T: {MitIDToken,p}inv(pk(p))
-    T -> C: {MitIDToken,p}inv(pk(p)),{|{PaymentInfo,C}inv(pk(T))|}KCT
-    C -> p: {MitIDToken,{PaymentInfo,C}inv(pk(T))}pk(p),{|credit(C),KCm,PaymentInfo|}sk(C,p)
-    p -> T: {PaymentInfo,MitIDToken}pk(T)
-    T -> C: {|{TicketInfo}inv(pk(T)),{{C,Ticket}inv(pk(T))}pk(T)|}KCT
-    C -> D: {{TicketInfo}inv(pk(T)),{{C,Ticket}inv(pk(T))}pk(T)}pk(D)
-    D -> T: {{TicketInfo}inv(pk(T)),{{C,Ticket}inv(pk(T))}pk(T)}pk(T)
-    T -> D: {VerificationResult}pk(D)
+    C -> m: {C,t,m,NC,MitIDToken,KCm}pk(m)
+    m -> t: {C,NC}inv(pk(m))
+    t -> m: {Nt,NC,t,KCt}inv(pk(t))
+    m -> C: {|KCt|}KCm
+    C -> t: {|TicketRequest,MitIDToken|}KCt
+    t -> C: {|C,PaymentInfo,TicketRequest|}KCt
+    C -> t: {|PaymentInfo,TicketRequest,C,MitIDToken|}KCt
+    t -> p: {t,MitIDToken}inv(pk(t))
+    p -> t: {MitIDToken,p}inv(pk(p))
+    t -> C: {MitIDToken,p}inv(pk(p)),{|{PaymentInfo,C}inv(pk(t))|}KCt
+    C -> p: {MitIDToken,{PaymentInfo,C}inv(pk(t))}pk(p),{|credit(C),KCm,PaymentInfo|}sk(C,p)
+    p -> t: {PaymentInfo,MitIDToken}pk(t)
+    t -> C: {|{TicketInfo}inv(pk(t)),{{C,Ticket}inv(pk(t))}pk(t)|}KCt
+    C -> D: {{TicketInfo}inv(pk(t)),{{C,Ticket}inv(pk(t))}pk(t)}pk(D)
+    D -> t: {{TicketInfo}inv(pk(t)),{{C,Ticket}inv(pk(t))}pk(t)}pk(t)
+    t -> D: {VerificationResult}pk(D)
 
 
 Goals:
 p authenticates C on sk(C,p)
 credit(C) secret between C,p
-TicketRequest secret between C,T
-TicketInfo secret between C,T,D
-VerificationResult secret between T,D
-KCT secret between C,T
-PaymentInfo secret between C,T,p
+TicketRequest secret between C,t
+TicketInfo secret between C,t,D
+VerificationResult secret between t,D
+KCt secret between C,t
+PaymentInfo secret between C,t,p
