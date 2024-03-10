@@ -22,10 +22,12 @@ Actions:
     C -> t: {|PaymentInfo,TicketRequest,C,MitIDToken|}KCt
     t -> p: {t,MitIDToken}inv(pk(t))
     p -> t: {MitIDToken,p}inv(pk(p))
+
     t -> C: {MitIDToken,p}inv(pk(p)),{|{PaymentInfo,C}inv(pk(t))|}KCt
     C -> p: {MitIDToken,{PaymentInfo,C}inv(pk(t))}pk(p),{|credit(C),KCm,PaymentInfo|}sk(C,p)
     p -> t: {PaymentInfo,MitIDToken}pk(t)
     t -> C: {|{TicketInfo}inv(pk(t)),{{C,Ticket}inv(pk(t))}pk(t)|}KCt
+
     C -> D: {{TicketInfo}inv(pk(t)),{{C,Ticket}inv(pk(t))}pk(t)}pk(D)
     D -> t: {{TicketInfo}inv(pk(t)),{{C,Ticket}inv(pk(t))}pk(t)}pk(t)
     t -> D: {VerificationResult}pk(D)
